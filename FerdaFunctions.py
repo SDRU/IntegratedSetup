@@ -61,8 +61,8 @@ def acquire_images(cam, nodemap, nodemap_tldevice, row_low, row_high, col_low, c
                     M = np.amax(T)
                     # print(M)
                     
-                    n = 40 # nr of samples to look back at
-                    scaling = 0.95  # how much do we scale the threshold
+                    n = 30 # nr of samples to look back at
+                    scaling = 0.9  # how much do we scale the threshold
                     if water == 0:
                         temperatures.append(M)
                         # print(M)

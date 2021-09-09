@@ -1,33 +1,30 @@
 # -*- coding: utf-8 -*-
 """
 Created on Tue Jul 27 16:30:47 2021
-Runs loop sequence on Thorlabs stage
+Runs Loop sequence on Thorlabs stage
 @author: Sandora
 """
-
-# USER DEFINED PARAMETERS
-pos1=5 # mm
-pos2=15 # mm
-max_velocity=4 # mm/s
-
-# CONSTANTS
-STEP=0.0005 # mm, constant for this stage!
-
-
-
-
 
 from pylablib.devices import Thorlabs
 import sys
 
-
 sys.path.append("C:\\Users\\OceanSpectro\\AppData\\Roaming\\Python\\Python38\\site-packages\\pylablib\\devices\\Thorlabs\\")
-print('Device found: ',Thorlabs.list_kinesis_devices())
+STEP=0.0005 # mm, constant for this stage!
 
-stage = Thorlabs.KinesisMotor(Thorlabs.list_kinesis_devices()[0][0],scale="step")
-stage.open()
+devices = Thorlabs.list_kinesis_devices()
+print('Devices found: ',devices)
 
 
+for device in devices:
+        serial_nr = device[0]
+        if serial_nr.startswith("2"):
+            stage = Thorlabs.KinesisMotor(serial_nr,scale="step")
+            stage.open()
+
+
+pos1=int(sys.argv[1]) # mm
+pos2=int(sys.argv[2]) # mm
+max_velocity=int(sys.argv[3]) # mm/s
 
 try:
     stage.setup_velocity(max_velocity=int(max_velocity/STEP), channel=1, scale='step')
@@ -42,11 +39,10 @@ try:
     
     
     # ABSOLUTE MOVE WITH ONLY ONE TRIGGER
-    # main loop
     stage.move_to(int(pos1/STEP))
     
     while True:
-        pos=stage.get_position(channel=1)
+        pos=stage.get_position(channel=1,scale="step")
         if pos==int(pos1/STEP):
             stage.set_triggerin_abs_move(position = int(pos2/STEP))
             

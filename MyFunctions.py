@@ -5,8 +5,8 @@ Created on Mon Aug 30 16:24:33 2021
 @author: Sandora
 """
 import sys
-sys.path.append("C:\\Users\\OceanSpectro\\Desktop\\Sandra\\Air controller\\SDK_V3_05_03\\Python_64\\DLL64")#add the path of the library here
-sys.path.append("C:\\Users\\OceanSpectro\\Desktop\\Sandra\\Air controller\\SDK_V3_05_03\\Python_64") #add the path of the LoadElveflow.py
+sys.path.append("C:\\Users\\OceanSpectro\\Desktop\\Sandra\\Air controller (Elveflow)\\SDK_V3_05_03\\Python_64\\DLL64")#add the path of the library here
+sys.path.append("C:\\Users\\OceanSpectro\\Desktop\\Sandra\\Air controller (Elveflow)\\SDK_V3_05_03\\Python_64") #add the path of the LoadElveflow.py
 
 import pyvisa
 import numpy as np
@@ -23,6 +23,7 @@ from email.header import UTF8
 from ctypes import *
 from array import array
 from Elveflow64 import *
+import subprocess
 
 
 
@@ -35,7 +36,7 @@ class Irrigation:
         for item in available_com_ports:        
             vendor_id = item.vid
             if vendor_id == 10221:
-                com_port = comports(include_links=True)[0].device            
+                com_port = item.device            
                 self.ser = serial.Serial(port = com_port, baudrate=9600, rtscts=1, bytesize=8, parity='N', stopbits=2, timeout=1) 
                 print('Irrigation initialized')
         if com_port == None:
@@ -253,8 +254,6 @@ class Camera:
             
         except KeyboardInterrupt as e:
             print('!!!!!!!!How dare you cancelling me!!!!!!!!!!!')
-            AirObject.set_air_pressure(0) 
-            AirObject.close()
     
             self.cam.EndAcquisition()
             self.cam.DeInit()
@@ -269,41 +268,89 @@ class Camera:
 
     def convert_to_temperature(self,image):
         
-        y=image.GetWidth()
-        x=image.GetHeight()
-        image=image.GetData()
+        try:        
+            y=image.GetWidth()
+            x=image.GetHeight()
+            image=image.GetData()
+            
+            IR=np.reshape(image,[x,y]);
+            # IR = IR[row_low:row_high,col_low:col_high]
+            x = np.shape(IR)[0]
+            y = np.shape(IR)[1]
+            
         
-        IR=np.reshape(image,[x,y]);
-        # IR = IR[row_low:row_high,col_low:col_high]
-        x = np.shape(IR)[0]
-        y = np.shape(IR)[1]
+            # Adding calibration coefficients from software
+            # Coefficients for Counts to Radiance
+            Cr_0 = -3.42255e-03
+            Cr_1 = 5.01980e-07
+            I = np.ones([x,y]) # must coincide with desired size in x or y
+            r1 = Cr_0*I
+            # Coefficients for Radiance to Temperature
+            Ct_0 = -6.32251e+01
+            Ct_1 = 3.52488e+04
+            Ct_2 = -4.55977e+06
+            Ct_3 = 5.02369e+08
+            Ct_4 = -3.55013e+10
+            Ct_5 = 1.42222e+12
+            Ct_6 = -2.45221e+13
         
-    
-        # Adding calibration coefficients from software
-        # Coefficients for Counts to Radiance
-        Cr_0 = -3.42255e-03
-        Cr_1 = 5.01980e-07
-        I = np.ones([x,y]) # must coincide with desired size in x or y
-        r1 = Cr_0*I
-        # Coefficients for Radiance to Temperature
-        Ct_0 = -6.32251e+01
-        Ct_1 = 3.52488e+04
-        Ct_2 = -4.55977e+06
-        Ct_3 = 5.02369e+08
-        Ct_4 = -3.55013e+10
-        Ct_5 = 1.42222e+12
-        Ct_6 = -2.45221e+13
-    
-    
-        r2 = Cr_1*IR
-        R = r1+r2; # Radiance 
-        T = Ct_0*np.ones([x,y]) + Ct_1*R + Ct_2*R**2 + Ct_3*R**3 + Ct_4*R**4 + Ct_5*R**5 + Ct_6*R**6
-        return T
-    
+        
+            r2 = Cr_1*IR
+            R = r1+r2; # Radiance 
+            T = Ct_0*np.ones([x,y]) + Ct_1*R + Ct_2*R**2 + Ct_3*R**3 + Ct_4*R**4 + Ct_5*R**5 + Ct_6*R**6
+            return T
+        
+        except KeyboardInterrupt as e:
+            raise e
+            
+            
     def close(self):  
         del self.cam 
         self.system.ReleaseInstance() 
         print('Camera closed')
+        
+class StageProcess:
+    def __init__(self,pos1, pos2, max_velocity):
+        self.pos1 = pos1
+        self.pos2 = pos2
+        self.max_velocity = max_velocity
+        
+        
+        
+    def open(self):
+        command1 = 'call C:\ProgramData\Anaconda3\Scripts\activate.bat'
+        command2 = ['py -3.8 "C:/Users/OceanSpectro/Desktop/Sandra/ThorlabsStageProcess.py"',str(self.pos1), str(self.pos2),str(self.max_velocity)]
+        command2 = " ".join(command2)
+        self.anaconda_prompt = subprocess.Popen(command1,  shell=True)
+        self.stage_process = subprocess.Popen(command2)
+        print("Stage process started")
+        
+    def close(self):
+        self.stage_process.terminate()    
+        subprocess.Popen("TASKKILL /F /PID {pid} /T".format(pid=self.anaconda_prompt.pid))
+        subprocess.Popen("TASKKILL /F /PID {pid} /T".format(pid=self.stage_process.pid))
+        print('Stage process closed')
+        
+        
+        
+class ShutterProcess:
+    def __init__(self,duration):
+        self.duration = duration        
+        
+        
+    def open(self):
+        command1 = 'call C:\ProgramData\Anaconda3\Scripts\activate.bat'
+        command2 = ['py -3.8 "C:/Users/OceanSpectro/Desktop/Sandra/ThorlabsShutterProcess.py"',str(self.duration)]
+        command2 = " ".join(command2)
+        self.anaconda_prompt = subprocess.Popen(command1,  shell=True)
+        self.shutter_process = subprocess.Popen(command2)
+        print("Shutter process started")
+        
+    def close(self):
+        self.shutter_process.terminate()    
+        subprocess.Popen("TASKKILL /F /PID {pid} /T".format(pid=self.anaconda_prompt.pid))
+        subprocess.Popen("TASKKILL /F /PID {pid} /T".format(pid=self.shutter_process.pid))
+        print('Shutter process closed')
          
         
     
