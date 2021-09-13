@@ -5,14 +5,14 @@ Created on Mon Aug 30 16:24:33 2021
 @author: Sandora
 """
 import sys
-sys.path.append("C:\\Users\\OceanSpectro\\Desktop\\Sandra\\Air controller (Elveflow)\\SDK_V3_05_03\\Python_64\\DLL64")#add the path of the library here
-sys.path.append("C:\\Users\\OceanSpectro\\Desktop\\Sandra\\Air controller (Elveflow)\\SDK_V3_05_03\\Python_64") #add the path of the LoadElveflow.py
+sys.path.append("C:\\Users\\OceanSpectro\\Desktop\\Sandra\\Code\\Air controller (Elveflow)\\SDK_V3_05_03\\Python_64\\DLL64")#add the path of the library here
+sys.path.append("C:\\Users\\OceanSpectro\\Desktop\\Sandra\\Code\\Air controller (Elveflow)\\SDK_V3_05_03\\Python_64") #add the path of the LoadElveflow.py
 
 import pyvisa
 import numpy as np
 import time
 import pandas as pd
-from datetime import datetime
+import datetime
 import serial
 import struct
 import os
@@ -24,10 +24,11 @@ from ctypes import *
 from array import array
 from Elveflow64 import *
 import subprocess
+from pylablib.devices import Thorlabs
 
 
 
-class Irrigation:
+class IrrigationObject:
     def __init__(self):
         # self.water_jet_setpoint_high = water_jet_setpoint_high
         # self.water_jet_setpoint_low = water_jet_setpoint_low
@@ -105,7 +106,7 @@ class Irrigation:
         
         
         
-class Air:
+class AirObject:
     def __init__(self, channel, pressure_high, pressure_low):        
         self.channel = channel
         self.pressure_high = pressure_high
@@ -123,14 +124,14 @@ class Air:
             print('Air initialized')
             
         
-    def set_air_pressure(self, pressure):
+    def set_pressure(self, pressure):
         set_channel=c_int32(self.channel) # convert to c_int32
         set_pressure=c_double(float(pressure) )#convert to c_double
         error=OB1_Set_Press(self.Instr_ID.value, set_channel, set_pressure, byref(self.Calib),1000) 
         return error
     
     def close(self):
-        self.set_air_pressure(0) 
+        self.set_pressure(0) 
         error=OB1_Destructor(self.Instr_ID.value)
         print('Air closed')
         
@@ -140,7 +141,7 @@ class Air:
  
     
         
-class Camera:
+class CameraObject:
     def __init__(self, thresholdT, adaptive_threshold):
         self.thresholdT = thresholdT
         self.adaptive_threshold = adaptive_threshold
@@ -161,13 +162,12 @@ class Camera:
             self = None
             raise DeviceNotConnectedError('Camera')
         else:
-            print('Number of cameras detected: %d' % num_cameras)              
             self.cam = cam_list[0]
             print('Camera initialized')    
 
         
             
-    def run_camera(self, AirObject):
+    def run(self, Air, Shutter):
         """
         This function acts as the body of the example; please see NodeMapInfo example
         for more in-depth comments on setting up cameras.
@@ -177,40 +177,32 @@ class Camera:
         :return: True if successful, False otherwise.
         :rtype: bool
         """
+        # water 1 on, water 0 off
+        water = 1 
+        temperatures = []
+        
         try:
-            # Initialize camera
-            self.cam.Init()
-    
-        
-            # Acquire images     
-            self.acquire_images(AirObject)
-            
-            # Deinitialize camera
-            self.cam.DeInit()
-    
-        
-        except PySpin.SpinnakerException as ex:
-            print('Error: %s' % ex)
-            
-
-        except KeyboardInterrupt as e:
-            raise e
-            
-        
-    
-    
-            
-    def acquire_images(self, AirObject):
-        try:
-
-            water = 1
+            # Initialize camera  
+            self.cam.Init()              
+            # Acquire images             
             self.cam.BeginAcquisition()
-            temperatures = []
-    
-            while True:
+            
+            
+            Shutter.open()
+            starttime = datetime.datetime.now()
+            
+            while True:                
                 
+                image_result = self.cam.GetNextImage()                  
                 
-                image_result = self.cam.GetNextImage()                
+                # shutter timer
+                if datetime.datetime.now() > (starttime + datetime.timedelta(seconds=Shutter.duration)):  
+                    Shutter.close()                    
+                    image_result.Release() 
+                    self.cam.EndAcquisition()
+                    self.cam.DeInit()
+                    self.close()
+                    break
     
                 if image_result.IsIncomplete():
                     print('Image incomplete with image status %d ...' % image_result.GetImageStatus())
@@ -240,17 +232,16 @@ class Camera:
                     if M>self.thresholdT:
                         # print(M)
                         if water == 0:                            
-                            AirObject.set_air_pressure(AirObject.pressure_low)                            
+                            Air.set_pressure(Air.pressure_low)                            
                             water = 1
     
                     else:
                         if water == 1:
-                            AirObject.set_air_pressure(AirObject.pressure_high) 
+                            Air.set_pressure(Air.pressure_high) 
                             water = 0
                                 
                     image_result.Release()   
     
-            self.cam.EndAcquisition()
             
         except KeyboardInterrupt as e:
             print('!!!!!!!!How dare you cancelling me!!!!!!!!!!!')
@@ -260,9 +251,9 @@ class Camera:
             self.close()
             raise e
 
-
-
-
+        
+        except PySpin.SpinnakerException as ex:
+            print('Error: %s' % ex) 
 
 
 
@@ -309,6 +300,8 @@ class Camera:
         self.system.ReleaseInstance() 
         print('Camera closed')
         
+        
+        
 class StageProcess:
     def __init__(self,pos1, pos2, max_velocity):
         self.pos1 = pos1
@@ -332,6 +325,38 @@ class StageProcess:
         print('Stage process closed')
         
         
+        
+        
+        
+class ShutterObject:
+    def __init__(self,duration):
+        self.duration = duration         
+    
+        devices = Thorlabs.list_kinesis_devices()    
+        
+        if len(devices) == 0:
+            raise DeviceNotConnectedError('Shutter')
+            
+        else:
+            for device in devices:
+                serial_nr = device[0]
+                if serial_nr.startswith("6"):
+                    self.shutter = Thorlabs.kinesis.KinesisDevice(serial_nr)
+                    self.shutter.open() 
+                    self.shutter.set_operating_mode(mode=1)
+                    
+                else:
+                    raise DeviceNotConnectedError('Shutter')
+        
+        
+        
+    def open(self):        
+        self.shutter.shutter_open()
+        
+    def close(self):
+        self.shutter.shutter_close()
+        self.shutter.close()
+       
         
 class ShutterProcess:
     def __init__(self,duration):
@@ -363,5 +388,4 @@ class DeviceNotConnectedError(Exception):
     pass            
         
 class SettingsNotAcceptedError(Exception):
-    print('Irrigation settings not accepted')
     pass

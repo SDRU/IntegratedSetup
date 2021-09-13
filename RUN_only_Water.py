@@ -5,7 +5,7 @@ This script runs irrigation in an ON/OFF sequence
 @author: Sandora
 """
 
-from StageWaterAirCameraFunctions import *
+from MyFunctions import *
 
 
 
@@ -18,20 +18,20 @@ time_off = 5
 
 
 try:
-    I = Irrigation()
+    I = IrrigationObject()
     I.set_setpoint(water_jet_setpoint_high)
     
     
     for _ in range(100):
         I.set_setpoint(water_jet_setpoint_high)
-        time.sleep(time_on)
-        # for i in range(time_on):
-        #     time.sleep(1)
+        # time.sleep(time_on)
+        for i in range(time_on):
+            time.sleep(1)
             
         I.set_setpoint(water_jet_setpoint_low)
-        time.sleep(time_off)
-        # for i in range(time_off):
-        #     time.sleep(1)        
+        # time.sleep(time_off)
+        for i in range(time_off):
+            time.sleep(1)        
             
     
 except KeyboardInterrupt:

@@ -5,7 +5,7 @@ This script runs air in an ON/OFF sequence
 @author: Sandora
 """
 
-from StageWaterAirCameraFunctions import *
+from MyFunctions import *
 
 
 ######## USER PARAMETERS
@@ -18,16 +18,16 @@ time_off = 2
 
 
 try:
-    A = Air(channel, pressure_high, pressure_low)        
+    A = AirObject(channel, pressure_high, pressure_low)        
     
     
     for _ in range(100):
-        A.set_air_pressure(pressure_low)
+        A.set_pressure(pressure_low)
         time.sleep(time_on)
         # for i in range(time_on):
         #     time.sleep(1)
             
-        A.set_air_pressure(pressure_high)
+        A.set_pressure(pressure_high)
         time.sleep(time_off)
         # for i in range(time_off):
         #     time.sleep(1)     

@@ -45,7 +45,7 @@ import os
 import PySpin
 import sys
 
-sys.path.append("C:/Users/OceanSpectro/Desktop/Sandra/Thermal camera")
+sys.path.append("c:/Users/OceanSpectro/Desktop/Sandra/Code/Thermal camera (FLIR)/thermalcamera/")
 from CameraFunctions import *
 
 
