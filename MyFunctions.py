@@ -142,10 +142,13 @@ class AirObject:
     
         
 class CameraObject:
-    def __init__(self, thresholdT, adaptive_threshold):
+    def __init__(self, thresholdT, adaptive_threshold,n,scaling):
         self.thresholdT = thresholdT
         self.adaptive_threshold = adaptive_threshold
+        self.n = n
+        self.scaling = scaling
         self.system = PySpin.System.GetInstance()
+        
         
         # Retrieve list of cameras from the system
         cam_list = self.system.GetCameras()
@@ -188,7 +191,7 @@ class CameraObject:
             self.cam.BeginAcquisition()
             
             
-            Shutter.open()
+            Shutter.unblock()
             starttime = datetime.datetime.now()
             
             while True:                
@@ -217,13 +220,11 @@ class CameraObject:
                     
                     if self.adaptive_threshold == 'ON':
                         # adaptive threshold
-                        n = 50 # nr of samples to look back at
-                        scaling = 0.9  # how much do we scale the threshold
                         if water == 0:
                             temperatures.append(M)
-                            if len(temperatures) > n:
+                            if len(temperatures) > self.n:
                                 threshold_old = self.thresholdT
-                                self.thresholdT = scaling * np.max(temperatures[-n:])
+                                self.thresholdT = self.scaling * np.mean(temperatures[-self.n:])
                                 if threshold_old != self.thresholdT:
                                     print(f'Threshold changed to {self.thresholdT}')
                             
@@ -350,11 +351,14 @@ class ShutterObject:
         
         
         
-    def open(self):        
+    def block(self):
+        self.shutter.shutter_close()
+        
+    def unblock(self):        
         self.shutter.shutter_open()
         
     def close(self):
-        self.shutter.shutter_close()
+        self.block()
         self.shutter.close()
        
         

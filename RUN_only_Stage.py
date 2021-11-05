@@ -1,21 +1,31 @@
 # -*- coding: utf-8 -*-
 """
 Created on Tue Jul 27 16:30:47 2021
-Runs loop sequence on Thorlabs stage
-@author: Sandora
+@author: Sandora and Thorlabs
+
+This script controls:
+    - translation stage Thorlabs DDSM50/M
+    
+    
+Runs loop sequence on Thorlabs stage, moving back and forth when the trigger is on.
+One trigger pulse is enough to make it move to the next position. 
+
+If you want to find the position range to move, do it manually on the controller first.
+If you want to temporarily stop the stage, stop the trigger and the stage will stop either at pos1 or pos2.
+If you want to change loop settings, first stop the program with CTRL+C, edit the loop settings and run it again
 """
 
 # USER DEFINED PARAMETERS
+# loop settings
 pos1=5 # mm
 pos2=15 # mm
 max_velocity=4 # mm/s
 
+
+
+
 # CONSTANTS
-STEP=0.0005 # mm, constant for this stage!
-
-
-
-
+STEP=0.0005 # mm, constant for DDSM50 stage, DO NOT CHANGE!
 
 from pylablib.devices import Thorlabs
 import sys
@@ -31,7 +41,6 @@ for device in devices:
         if serial_nr.startswith("2"):
             stage = Thorlabs.KinesisMotor(serial_nr,scale="step")
             stage.open()
-
 
 
 try:
