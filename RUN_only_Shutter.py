@@ -17,7 +17,7 @@ import time
 # sequence parameters
 on_time = 5e3 # in ms
 off_time = 5e3 # in ms
-num_cycles = 3
+num_cycles = 1
 
 
 
@@ -35,17 +35,17 @@ try:
             shutter = Thorlabs.kinesis.KinesisDevice(serial_nr)
             shutter.open()
             
-        else:
-            raise DeviceNotConnectedError
+    
+            # raise DeviceNotConnectedError
     on_time, off_time, num_cycles = shutter.get_cycle_params()
     
     shutter.set_operating_mode(mode=3)
     shutter.set_cycle_params(on_time=on_time, off_time=off_time, num_cycles=num_cycles)
     
     # # open shutter once
-    shutter.shutter_open()
+    shutter.unblock()
     
-    time.sleep(round((on_time+off_time)*num_cycles)+5)
+    time.sleep(round((on_time+off_time)*num_cycles/1000)+5)
         
     
     shutter.close()

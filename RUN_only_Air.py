@@ -9,7 +9,7 @@ This script controls:
 Air in switched ON/OFF in a sequence
 """
 
-from MyFunctions import *
+from Functions import *
 
 
 ######## USER PARAMETERS
@@ -18,8 +18,8 @@ pressure_high = 2000 # in mbar
 pressure_low = 0
 channel = 2 # where is the air outlet is connected
 # sequence parameters
-time_on = 2 
-time_off = 2
+time_on = 2 # sec
+time_off = 2 # sec
 nr_of_repeats = 5
 
 
@@ -38,7 +38,7 @@ try:
         for i in range(time_off):
             time.sleep(1)     
 
-            
+    A.close()           
 
 except DeviceNotConnectedError as ex:
     print('Error: %s' % ex)

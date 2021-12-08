@@ -11,7 +11,7 @@ Water in switched ON/OFF in a sequence
 
 """
 
-from MyFunctions import *
+from Functions import *
 
 
 
@@ -22,12 +22,13 @@ water_jet_setpoint_low = 0 # the value is in bar
 # sequence parameters
 time_on = 5
 time_off = 5
-nr_of_repeats = 5
+nr_of_repeats = 2
 
 
 try:
     I = IrrigationObject()
     I.set_setpoint(water_jet_setpoint_high)
+    
     
     
     for _ in range(nr_of_repeats):

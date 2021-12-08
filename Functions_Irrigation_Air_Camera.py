@@ -170,7 +170,7 @@ class CameraObject:
 
         
             
-    def run(self, Air, Shutter):
+    def run(self, Air):
         """
         This function acts as the body of the example; please see NodeMapInfo example
         for more in-depth comments on setting up cameras.
@@ -191,21 +191,21 @@ class CameraObject:
             self.cam.BeginAcquisition()
             
             
-            Shutter.unblock()
-            starttime = datetime.datetime.now()
+            # Shutter.unblock()
+            # starttime = datetime.datetime.now()
             
             while True:                
                 
                 image_result = self.cam.GetNextImage()                  
                 
-                # shutter timer
-                if datetime.datetime.now() > (starttime + datetime.timedelta(seconds=Shutter.duration)):  
-                    Shutter.close()                    
-                    image_result.Release() 
-                    self.cam.EndAcquisition()
-                    self.cam.DeInit()
-                    self.close()
-                    break
+                # # shutter timer
+                # if datetime.datetime.now() > (starttime + datetime.timedelta(seconds=Shutter.duration)):  
+                #     Shutter.close()                    
+                #     image_result.Release() 
+                #     self.cam.EndAcquisition()
+                #     self.cam.DeInit()
+                #     self.close()
+                #     break
     
                 if image_result.IsIncomplete():
                     print('Image incomplete with image status %d ...' % image_result.GetImageStatus())
@@ -216,7 +216,7 @@ class CameraObject:
                     
                     T = self.convert_to_temperature(image_converted)
                     M = np.amax(T)
-                    print(M)
+                    # print(M)
                     
                     if self.adaptive_threshold == 'ON':
                         # adaptive threshold
@@ -229,9 +229,10 @@ class CameraObject:
                                     print(f'Threshold changed to {self.thresholdT}')
                             
                             
+                    image_result.Release()
                     
                     if M>self.thresholdT:
-                        # print(M)
+                        print(M)
                         if water == 0:                            
                             Air.set_pressure(Air.pressure_low)                            
                             water = 1
@@ -241,7 +242,7 @@ class CameraObject:
                             Air.set_pressure(Air.pressure_high) 
                             water = 0
                                 
-                    image_result.Release()   
+                       
     
             
         except KeyboardInterrupt as e:

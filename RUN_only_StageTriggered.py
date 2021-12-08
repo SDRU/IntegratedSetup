@@ -17,9 +17,9 @@ If you want to change loop settings, first stop the program with CTRL+C, edit th
 
 # USER DEFINED PARAMETERS
 # loop settings
-pos1=38 # mm
-pos2=44 # mm
-max_velocity=8 # mm/s
+pos1=5 # mm
+pos2=15 # mm
+max_velocity=4 # mm/s
 
 
 
@@ -46,17 +46,26 @@ for device in devices:
 try:
     stage.setup_velocity(max_velocity=int(max_velocity/STEP), channel=1, scale='step')
     
-   
+    # Set general trigger parameters
+    tr1_mode=b'\x03' 
+    tr1_polarity=b'\x01'
+    tr2_mode=b'\x00'
+    tr2_polarity=b'\x00'
+    
+    stage.set_trigger_params(tr1_mode=tr1_mode,tr1_polarity=tr1_polarity,tr2_mode=tr2_mode,tr2_polarity=tr2_polarity)
+    
+    
+    # ABSOLUTE MOVE WITH ONLY ONE TRIGGER
     # main loop
     stage.move_to(int(pos1/STEP))
     
     while True:
         pos=stage.get_position(channel=1,scale="step")
         if pos==int(pos1/STEP):
-            stage.move_to(int(pos2/STEP))
+            stage.set_triggerin_abs_move(position = int(pos2/STEP))
             
         if pos==int(pos2/STEP):
-            stage.move_to(int(pos1/STEP))
+            stage.set_triggerin_abs_move(position = int(pos1/STEP))
     
     stage.close()
             

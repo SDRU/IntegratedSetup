@@ -7,13 +7,13 @@ This script controls:
     - irrigation system TESCOM ER5000
     - air flow controller Eleveflow OB1
     - thermal camera FLIR A655
-    - shutter Thorlabs SH1
+    - shutter Thorlabs SH1 with solenoid controller KSC101
     
 Connections to the PC:
     - irrigation system: blue USB-A
-    - ait flow controller: black USB-A
-    - thermal camera: Ethernet cable
-    - shutter: special Thorlabs-provided USB-A
+    - air flow controller: black USB-A
+    - thermal camera: Ethernet cable (directly to PC, not via USB extension!)
+    - solenoid controller: special Thorlabs-provided USB-A
 
 Irrigation: always on
 
@@ -28,11 +28,11 @@ Shutter: Is open for a predefined time
 ######## USER PARAMETERS
 
 # IRRIGATION SETTINGS
-water_jet_setpoint_high = 30 # in bar, 100 is max, water jet pressure
+water_pressure = 10 # Water jet pressure. Standard value 30 bars, 0-100 bars accepted
 
 # AIR SETTINGS
-pressure_high = 2000 # in mbar, 2000 is max, air pressure
-pressure_low = 0 # anything more than 0 will partially deflect the water jet
+air_pressure_high = 2000 # in mbar, 2000 is max, air pressure
+air_pressure_low = 0 # anything more than 0 will partially deflect the water jet
 channel = 2 # where is the air outlet is connected
 
 # CAMERA SETTINGS
@@ -47,50 +47,45 @@ duration = 10 # in seconds, how long is shutter open.
 
 
 
-from MyFunctions import *
+from Functions import *
 
 
 try:
+    Air, Camera, Irrigation, Shutter = [None, None, None, None] 
+        
+    Irrigation = IrrigationObject()
+    Irrigation.set_setpoint(water_pressure)
     
-    Air, Camera, Water, Shutter = [None, None, None, None]    
     
-    Water = IrrigationObject()
-    Water.set_setpoint(water_jet_setpoint_high)
-    
-    
-    Air = AirObject(channel, pressure_high, pressure_low)    
-    Air.set_pressure(pressure_low)    
+    Air = AirObject(channel, air_pressure_high, air_pressure_low)    
+    Air.set_pressure(air_pressure_low)    
    
     Shutter = ShutterObject(duration)
     
     Camera = CameraObject(thresholdT, adaptive_threshold, n, scaling)
-    Camera.run(Air, Shutter) 
+    Camera.run(Air, Shutter)     
     
+    # Shutter and Camera are closed automatically when the time is up
+    Irrigation.close()
     Air.close()
-    Water.close()
-    Shutter.close()
+    
+    
+    
+   
     
 
 except DeviceNotConnectedError as ex:
-    print('Error: %s' % ex)
+    close_devices([Air, Irrigation, Camera, Shutter])  
+    print('Error: %s' % ex)      
     
-    for var in [Air, Water, Camera, Shutter]:
-        if var != None:
-            var.close()    
-    
-except KeyboardInterrupt:
-    print('Program ended')
-    
-    for var in [Air, Water, Shutter]:
-        if var != None:
-            var.close()  
+except KeyboardInterrupt:    
+    close_devices([Air, Irrigation, Camera, Shutter])
+    print('Program cancelled')    
           
 except SettingsNotAcceptedError:
-    print('Restart the irrigation system')
+    close_devices([Air, Irrigation, Camera, Shutter])  
+    print('Restart the irrigation system')     
     
 except:
+    close_devices([Air, Irrigation, Camera, Shutter])  
     print('Random error')
-    
-    for var in [Air, Water, Camera, Shutter]:
-        if var != None:
-            var.close() 
