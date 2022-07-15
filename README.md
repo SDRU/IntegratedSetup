@@ -1,9 +1,11 @@
-Slowly integrating all devices at BLOG, University of Basel. 
+Feedback-driven irrigation system. Irrigation starts only based on feedback from the thermal camera - when current temperature exceeds a threshold. Threshold is continuously adapting based on previous measurements.
+
+
 This script controls:
-    - irrigation system TESCOM ER5000
-    - air flow controller Eleveflow OB1
-    - thermal camera FLIR A655
-    - shutter Thorlabs SH1
+* irrigation system TESCOM ER5000
+* air flow controller Eleveflow OB1
+* thermal camera FLIR A655
+* shutter Thorlabs SH1
     
 Irrigation: always on
 

@@ -29,9 +29,11 @@ STEP=0.0005 # mm, constant for DDSM50 stage, DO NOT CHANGE!
 
 from pylablib.devices import Thorlabs
 import sys
+import timeit
 
 
-sys.path.append("C:\\Users\\OceanSpectro\\AppData\\Roaming\\Python\\Python38\\site-packages\\pylablib\\devices\\Thorlabs\\")
+
+sys.path.append("C:\\Users\\Sandra Drusova\\AppData\\Roaming\\Python\\Python38\\site-packages\\pylablib\\devices\\Thorlabs\\")
 devices = Thorlabs.list_kinesis_devices()
 print('Devices found: ',devices)
 
@@ -44,20 +46,24 @@ for device in devices:
 
 
 try:
-    stage.setup_velocity(max_velocity=int(max_velocity/STEP), channel=1, scale='step')
-    
+    stage.setup_velocity(max_velocity=int(max_velocity/STEP), acceleration=int(5000/STEP),channel=1, scale='step')
+    print(stage.get_velocity_parameters())
    
     # main loop
     stage.move_to(int(pos1/STEP))
+    start = timeit.timeit()
     
     while True:
+
         pos=stage.get_position(channel=1,scale="step")
         if pos==int(pos1/STEP):
             stage.move_to(int(pos2/STEP))
             
         if pos==int(pos2/STEP):
             stage.move_to(int(pos1/STEP))
-    
+            
+    end = timeit.timeit()
+    print(end - start)
     stage.close()
             
 except KeyboardInterrupt:
