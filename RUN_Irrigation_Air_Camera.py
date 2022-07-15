@@ -34,14 +34,12 @@ pressure_low = 0 # anything more than 0 will partially deflect the water jet
 channel = 2 # where is the air outlet is connected
 
 # CAMERA SETTINGS
-thresholdT = 30 # in degC, treshold temperature to start the irrigation
-adaptive_threshold = 'OFF'
+thresholdT = 27
+ # in degC, treshold temperature to start the irrigation
+adaptive_threshold = 'ON'
 # adaptive threshold
-n = 50 # nr of samples to look back at
-scaling = 0.9  # how much do we scale the thresholdT
-
-# SHUTTER SETTINGS
-duration = 10 # in seconds, how long is shutter open. 
+n = 45 # nr of samples to look back at
+scaling = 1.0  # how much do we scale the thresholdT
 
 
 
@@ -59,14 +57,13 @@ try:
     Air = AirObject(channel, pressure_high, pressure_low)    
     Air.set_pressure(pressure_low)    
    
-    # Shutter = ShutterObject(duration)
-    
+   
     Camera = CameraObject(thresholdT, adaptive_threshold, n, scaling)
     Camera.run(Air) 
     
     Air.close()
     Water.close()
-    # Shutter.close()
+
     
 
 except DeviceNotConnectedError as ex:

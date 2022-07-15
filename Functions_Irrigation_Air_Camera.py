@@ -166,7 +166,8 @@ class CameraObject:
             raise DeviceNotConnectedError('Camera')
         else:
             self.cam = cam_list[0]
-            print('Camera initialized')    
+            self.on = 1
+            print('Camera initialized')      
 
         
             
@@ -186,53 +187,70 @@ class CameraObject:
         
         try:
             # Initialize camera  
-            self.cam.Init()              
+            self.cam.Init()   
+            
+            # Retrieve GenICam nodemap
+            nodemap = self.cam.GetNodeMap()
+            # In order to access the node entries, they have to be casted to a pointer type (CEnumerationPtr here)
+            node_acquisition_mode = PySpin.CEnumerationPtr(nodemap.GetNode('AcquisitionMode'))
+            if not PySpin.IsAvailable(node_acquisition_mode) or not PySpin.IsWritable(node_acquisition_mode):
+                print('Unable to set acquisition mode to continuous (enum retrieval). Aborting...')
+                return False
+    
+            # Retrieve entry node from enumeration node
+            node_acquisition_mode_continuous = node_acquisition_mode.GetEntryByName('Continuous')
+            if not PySpin.IsAvailable(node_acquisition_mode_continuous) or not PySpin.IsReadable(node_acquisition_mode_continuous):
+                print('Unable to set acquisition mode to continuous (entry retrieval). Aborting...')
+                return False
+    
+            # Retrieve integer value from entry node
+            acquisition_mode_continuous = node_acquisition_mode_continuous.GetValue()
+    
+            # Set integer value from entry node as new value of enumeration node
+            node_acquisition_mode.SetIntValue(acquisition_mode_continuous)
+        
+        
+        
+        
             # Acquire images             
             self.cam.BeginAcquisition()
             
             
             # Shutter.unblock()
-            # starttime = datetime.datetime.now()
+            # starttime = datetime.datetime.now()            
             
             while True:                
                 
-                image_result = self.cam.GetNextImage()                  
+                image_result = self.cam.GetNextImage()  
                 
-                # # shutter timer
-                # if datetime.datetime.now() > (starttime + datetime.timedelta(seconds=Shutter.duration)):  
-                #     Shutter.close()                    
-                #     image_result.Release() 
-                #     self.cam.EndAcquisition()
-                #     self.cam.DeInit()
-                #     self.close()
-                #     break
     
                 if image_result.IsIncomplete():
                     print('Image incomplete with image status %d ...' % image_result.GetImageStatus())
     
                 else:
     
-                    image_converted = image_result.Convert(PySpin.PixelFormat_Mono16, PySpin.HQ_LINEAR)                  
+                    image_converted = image_result.Convert(PySpin.PixelFormat_Mono16, PySpin.HQ_LINEAR)  
                     
-                    T = self.convert_to_temperature(image_converted)
-                    M = np.amax(T)
-                    # print(M)
+                    
+                    self.T = self.convert_to_temperature(image_converted)
+                    M = np.amax(self.T)
+                    print(M)
                     
                     if self.adaptive_threshold == 'ON':
                         # adaptive threshold
                         if water == 0:
                             temperatures.append(M)
                             if len(temperatures) > self.n:
-                                threshold_old = self.thresholdT
-                                self.thresholdT = self.scaling * np.mean(temperatures[-self.n:])
-                                if threshold_old != self.thresholdT:
+                                threshold_new = self.scaling * np.mean(temperatures[-self.n:])
+                                # threshold_new = self.scaling * np.amax(temperatures[-self.n:])
+                                if np.abs(threshold_new - self.thresholdT)>0.5:
+                                    self.thresholdT = threshold_new
                                     print(f'Threshold changed to {self.thresholdT}')
                             
                             
-                    image_result.Release()
                     
                     if M>self.thresholdT:
-                        print(M)
+                        # print(M)
                         if water == 0:                            
                             Air.set_pressure(Air.pressure_low)                            
                             water = 1
@@ -241,6 +259,8 @@ class CameraObject:
                         if water == 1:
                             Air.set_pressure(Air.pressure_high) 
                             water = 0
+                                
+                    image_result.Release()
                                 
                        
     

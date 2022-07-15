@@ -1,0 +1,72 @@
+<?xml version="1.0"?>
+<Sequence xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" Version="4">
+  <Devices>
+    <DeviceDefinition DeviceAlias="Device001" RestoreParameters="true">
+      <DeviceName>KCube Brushless Motor Controller</DeviceName>
+      <DevicePrefix>28</DevicePrefix>
+      <SerialNo>28250598</SerialNo>
+      <Actuator>DDSM50/M</Actuator>
+    </DeviceDefinition>
+  </Devices>
+  <SequenceEventCollection>
+    <SequenceElements xsi:type="Repeat" Name="Repeat">
+      <Description />
+      <NameTag>End</NameTag>
+      <RepeatCount>200</RepeatCount>
+    </SequenceElements>
+    <SequenceElements xsi:type="Event" Name="Event">
+      <Description />
+      <DeviceSequences>
+        <Device DeviceName="Device001">
+          <DeviceActions>
+            <Action FunctionName="MoveToAt">
+              <Parameters>
+                <NameValuePairOfObject Name="MaxVelocity">
+                  <Value xsi:type="xsd:decimal">8</Value>
+                </NameValuePairOfObject>
+                <NameValuePairOfObject Name="Acceleration">
+                  <Value xsi:type="xsd:decimal">5000</Value>
+                </NameValuePairOfObject>
+                <NameValuePairOfObject Name="MoveTo">
+                  <Value xsi:type="xsd:decimal">20</Value>
+                </NameValuePairOfObject>
+                <NameValuePairOfObject Name="RestoreParams">
+                  <Value xsi:type="xsd:boolean">false</Value>
+                </NameValuePairOfObject>
+              </Parameters>
+            </Action>
+          </DeviceActions>
+        </Device>
+      </DeviceSequences>
+    </SequenceElements>
+    <SequenceElements xsi:type="Event" Name="Event">
+      <Description />
+      <DeviceSequences>
+        <Device DeviceName="Device001">
+          <DeviceActions>
+            <Action FunctionName="MoveToAt">
+              <Parameters>
+                <NameValuePairOfObject Name="MaxVelocity">
+                  <Value xsi:type="xsd:decimal">8</Value>
+                </NameValuePairOfObject>
+                <NameValuePairOfObject Name="Acceleration">
+                  <Value xsi:type="xsd:decimal">5000</Value>
+                </NameValuePairOfObject>
+                <NameValuePairOfObject Name="MoveTo">
+                  <Value xsi:type="xsd:decimal">0</Value>
+                </NameValuePairOfObject>
+                <NameValuePairOfObject Name="RestoreParams">
+                  <Value xsi:type="xsd:boolean">false</Value>
+                </NameValuePairOfObject>
+              </Parameters>
+            </Action>
+          </DeviceActions>
+        </Device>
+      </DeviceSequences>
+    </SequenceElements>
+  </SequenceEventCollection>
+  <RepeatCount>1</RepeatCount>
+  <RepeatContinuously>false</RepeatContinuously>
+  <RepeatRun>false</RepeatRun>
+  <SequenceLogPath>C:\Users\Sandra Drusova\Documents\Thorlabs\Thorlabs.MotionControl.Kinesis\Sequence Logs</SequenceLogPath>
+</Sequence>
